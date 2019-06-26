@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<!--     *** Stored in /var/www/html/ ***     -->
+
+<h2>Pellets burner</h2>
+<p>Status of Rodenvalls pelletsburner:</p>
+<p id="demo"></p>
+
+<div style="display:none;">
+	<img id="fire" width="15" height="15" src="fire.jpg">
+</div>
+
+<canvas id="myCanvas" ack_width="400" height="300" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+
+<script>
+	function temperature_to_color(temp) {
+		if (temp < 30) {
+		  temp_color = cold;
+		} else if (temp < 40) {
+		  temp_color = varm;
+		} else if (temp < 50) {
+		  temp_color = hot;
+		} else {
+		  temp_color = superhot;
+		}
+
+		return temp_color;
+	}
+
+	function acktank_temperature_to_color(temp) {
+		/*
+		Temperature in acktank is between 30-75 degreas
+		*/
+
+		  if (temp < 30) {
+			  temp_color = acktemp_30;
+		  } else if (temp < 40) {
+			  temp_color = acktemp_40;
+		  } else if (temp < 50) {
+			  temp_color = acktemp_50;
+		  } else if (temp < 60) {
+			  temp_color = acktemp_60;
+		  } else {
+			  temp_color = acktemp_70;
+		  }
+
+		  return temp_color;
+	}
+
+	function read_temp(giver) {
+		// Read temp
+		return read_text_file(giver);
+	}
+
+	function read_text_file(file)
+	{
+		var allText = ""
+		
+		var rawFile = new XMLHttpRequest();
+		rawFile.open("GET", file, false);
+		rawFile.onreadystatechange = function ()
+		{
+			if(rawFile.readyState === 4)
+			// 0    UNSENT    Client has been created. open() not called yet.
+			// 1    OPENED    open() has been called.
+			// 2    HEADERS_RECEIVED    send() has been called, and headers and status are available.
+			// 3    LOADING    Downloading; responseText holds partial data.
+			// 4    DONE    The operation is complete.
+			{
+				if(rawFile.status === 200 || rawFile.status == 0)
+				// status: 200: "OK"
+				{
+					allText = rawFile.responseText;
+				}
+			}
+		}
+		rawFile.send(null);
+		return allText
+	}
+
+	function copy_array_content_to_right(array_name, copy_pos, itterations) {
+		/*
+		Function that copy array value from
+		copy_pos to copy_to, and do that number
+		of itterations
+		*/
+		var my_copy_value = array_name[copy_pos];
+		
+		for (var i=(copy_pos+1); i<(itterations+copy_pos+1); i++) {
+			array_name[i] = my_copy_value;
+		}
+	}
+
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	var height=10;
+	var ack_width=100;
+	var x=40;
+	var y=20;
+	var color=255;
+	var ack_slice=20;
+	var pipe_with=7;
+
+	var cold="rgb(0, 51, 204)"
+	var varm="rgb(255, 153, 51)"
+	var hot="rgb(255, 51, 0)"
+	var superhot="rgb(204, 0, 0)"
+
+	var acktemp_70="rgb(255, 0, 0)";
+	var acktemp_60="rgb(255, 128, 0)";
+	var acktemp_50="rgb(0, 255, 0)";
+	var acktemp_40="rgb(0, 128, 255)";
+	var acktemp_30="rgb(0, 0, 255)";
+
+	var super_fire="rgb(255, 64, 0)"
+	var fire="rgb(255, 204, 0)"
+	var no_fire="rgb(13, 13, 13)"
+
+
+	//var GIVER_PATH = "/mnt/1wire/"
+	//var AckTopp = GIVER_PATH + "10.039D55010800/temperature"
+	//var Burner = GIVER_PATH + "10.049655010800/temperature"
+	//var Shunt = GIVER_PATH + "10.3B8F55010800/temperature"
+	//var AckBottom = GIVER_PATH + "10.3EEF55010800/temperature"
+	//var Out = GIVER_PATH + "10.71EE55010800/temperature"
+	//var Counter = GIVER_PATH + "1D.8ABD0D000000/counter.A"
+
+	var ack_topp = read_temp("ackTopp");
+	var ack_bottom = read_temp("ackBottom");
+	var burner = read_temp("burner");
+	var shunt = read_temp("shunt");
+	var out = read_temp("out");
+
+	// Pipe acktank to panna
+	ctx.beginPath();
+	ctx.lineWidth=pipe_with;
+	ctx.moveTo((y+ack_width*2/3), x);
+	ctx.lineTo((y+ack_width*2/3), 5);
+	ctx.lineTo((ack_width*2), 5);
+	ctx.lineTo((ack_width*2), (height*(ack_slice-4)));
+	ctx.strokeStyle = cold;
+	ctx.stroke();
+
+	// Pipe acktank to shunt
+	ctx.beginPath();
+	ctx.lineWidth=pipe_with;
+	ctx.moveTo((y+ack_width*1/3), x);
+	ctx.lineTo((y+ack_width*1/3), 5);
+	ctx.lineTo((20), 5);
+	ctx.strokeStyle = temperature_to_color(shunt);
+	ctx.fillText((Math.round(shunt)), (y+ack_width*1/3+pipe_with), (x));
+	ctx.stroke();
+
+	// Acktank
+	// Create array with $ack_slice possitions
+	var ack_temp = new Array(ack_slice);
+	document.write("<br>");
+	ack_temp[0] = ack_topp;
+	copy_array_content_to_right(ack_temp, 0, 3);
+
+	ack_temp[ack_temp.length-4] = ack_bottom;
+	copy_array_content_to_right(ack_temp, (ack_temp.length-4), 3);
+	ack_temp[8] = ((Number(ack_temp[0]) + Number(ack_temp[16])) / 2);
+	copy_array_content_to_right(ack_temp, 8, 3);
+	ack_temp[4] = ((Number(ack_temp[0]) + Number(ack_temp[8])) / 2);
+	copy_array_content_to_right(ack_temp, 4, 3);
+	ack_temp[12] = ((Number(ack_temp[8]) + Number(ack_temp[16])) / 2);
+	copy_array_content_to_right(ack_temp, 12, 3);
+	ack_temp[ack_temp.length-1] = ack_bottom;
+
+	//document.write("0 temp = " + ack_temp[0] + "<br>");
+	//document.write("20 temp = " + ack_temp[19] + "<br>");
+	for (var i=0; i<ack_slice; i++) {
+		ctx.fillRect(y, x, ack_width, height);
+		ctx.fillStyle = acktank_temperature_to_color(ack_temp[i]);
+		ctx.fillText((Math.round(ack_temp[i])), (y + ack_width), (x + height));
+		x+=10;
+	}
+
+	// Pannan
+	ctx.fillStyle = "rgb(0, 102, 0)";
+	ctx.fillRect((ack_width*2-y), (height*(ack_slice-4)), ack_width, (ack_slice*4));
+	ctx.fillText((Math.round(burner)), (height*(ack_slice-4)+ack_width), (x + height));
+
+	// Eldluckan
+	var img = document.getElementById("fire");
+
+	 if (burner < 35){
+		ctx.fillStyle = no_fire;
+		ctx.fillRect((ack_width*2-y)+40, (height*(ack_slice-4))+50, y, y);
+	 } else if (burner < 45) {
+		ctx.fillStyle = fire;
+		ctx.fillRect((ack_width*2-y)+40, (height*(ack_slice-4))+50, y, y);
+	 } else {
+		ctx.clearRect((ack_width*2-y)+40, (height*(ack_slice-4))+50, y, y);
+		ctx.drawImage(img, (ack_width*2-y)+40, (height*(ack_slice-4))+50, y, y);
+	 }
+
+	document.write("<br>Out temperature = " + out + "gr<br>");
+	document.getElementById("demo").innerHTML = Date();
+
+	var str = read_text_file('last_oneWire.log');
+	document.write(str.fontsize(2));
+	
+	/*
+	var client = new XMLHttpRequest();
+	client.open('GET', 'last_oneWire.log');
+	client.onreadystatechange = function() {
+	  alert(client.responseText);
+	}
+	client.send();
+	*/
+	//document.write(client.send());
+</script> 
+</body>
+</html>

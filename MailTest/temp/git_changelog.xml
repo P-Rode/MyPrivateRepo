@@ -1,0 +1,13 @@
+commit 8243c1a2991e8f5a5b7b4e4282e2cb655c142ca8
+tree eef0db04adca99f580609e2478ea164588c49213
+parent c4e083f19718fb4f934b76533fa89cc2e003f7cf
+author Daniel Lundin <Daniel.a.Lundin@ericsson.com> 1415361647 +0100
+author Daniel Lundin <per.rodenvall@ericsson.com> 1415361647 +0100
+committer Daniel Lundin <Daniel.a.Lundin@ericsson.com> 1415361647 +0100
+
+    test/amf: A pure pep8 update on "/osaftest/fw/amf/baseclasses.py"
+    
+    "osaftest/fw/amf/baseclasses.py" was the the testcase on osaftest with most pep8 "defects".
+    Now it is one of the best.
+
+:100755 100755 e742908027d580778d8d3432123157cc5b64e419 680a60ff05e11c326c8b35b005324df132e6aa2e M	osaftest/fw/amf/baseclasses.py

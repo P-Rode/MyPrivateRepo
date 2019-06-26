@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<changesets>
+<changeset node='fd4bc9ded37de8dfd9f62c20d94a007b71b3317b' author='Hans Nordeback &lt;hans.nordeback@ericsson.com&gt;' rev='3964' date='1415362987.0-3600'><msg>pyosaf: add  saAis import [#751]</msg><added></added><deleted></deleted><files>python/pyosaf/saImmOi.py</files><parents></parents></changeset>
+</changesets>

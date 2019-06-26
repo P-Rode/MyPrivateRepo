@@ -1,0 +1,17 @@
+From: per.rodenvall@ericsson.com
+To: per.rodenvall@ericsson.com
+Subject: Some fancy title
+
+body1="Hej "
+body2="Volvo "
+body3="fin"
+# sendmail -t < test.mail
+
+
+Content-Type: $mimetype
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=/home/uabrode/Desktop/shared/scrip/SendMail/archive.zip
+
+ 
+  base64 /home/uabrode/Desktop/shared/scrip/SendMail/archive.zip
+

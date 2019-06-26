@@ -1,0 +1,227 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Run osaftest on opensaf started as nonRoot</description>
+  <logRotator class="hudson.tasks.LogRotator">
+    <daysToKeep>-1</daysToKeep>
+    <numToKeep>40</numToKeep>
+    <artifactDaysToKeep>-1</artifactDaysToKeep>
+    <artifactNumToKeep>-1</artifactNumToKeep>
+  </logRotator>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <de.pellepelster.jenkins.walldisplay.WallDisplayJobProperty plugin="jenkinswalldisplay@0.6.27">
+      <wallDisplayName>Osaftest on default -NonRoot</wallDisplayName>
+    </de.pellepelster.jenkins.walldisplay.WallDisplayJobProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.2.7">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>ssh://uabrode@gerritforge.lmera.ericsson.se:29418/osaftest</url>
+        <credentialsId>a76c967b-30e6-42db-896d-4bd199f19eb5</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>develop</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+        <relativeTargetDir>osaftest</relativeTargetDir>
+      </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+    </extensions>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>umask 0002
+cd osaftest
+if mount | grep /var/lib/lxc/cache &gt; /dev/null; then
+    sudo umount /var/lib/lxc/cache
+fi
+source config/sourceme.bash
+export OSAFREPODIR=/var/lib/jenkins/jobs/Build-opensaf-default-nonRoot/workspace/opensaf-staging
+export NO_GUI=1
+python -m osaftest.fw.cluster stop
+find $OSAFREPODIR -name &apos;*.gcno&apos; | xargs rm -f
+sudo lxc-stop -n dummy || /bin/true
+
+# Build opensaf with coverage, run as non-root, generate LXC containers
+tools/setup.py -o -g -n -r http://www-proxy.ericsson.se:8080
+
+# Build opensaf , run as non-root, generate LXC containers
+#tools/setup.py -m -g -n -r http://www-proxy.ericsson.se:8080
+
+# To make logtest 5 2 work
+mkdir -p workspace/shared/saflog/xxtest
+
+# Change permissions
+##########################################################
+sudo find $OSAFREPODIR -executable -type f -exec chmod 777 {} +
+sudo find $OSAFREPODIR ! -executable -type f -exec chmod 666 {} +
+sudo find $OSAFREPODIR -type d -exec chmod 777 {} +
+
+sudo find $OSAFTESTDIR -executable -type f -exec chmod 777 {} +
+sudo find $OSAFTESTDIR ! -executable -type f -exec chmod 666 {} +
+sudo find $OSAFTESTDIR -type d -exec chmod 777 {} +
+
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>umask 002
+cd osaftest
+
+source config/sourceme.bash
+export OSAFREPODIR=/var/lib/jenkins/jobs/Build-opensaf-default-nonRoot/workspace/opensaf-staging
+export NO_GUI=1
+
+# Run the tests (hafe: skip regtests for now)
+#nosetests -s --detailed-errors --exclude regtest --with-xunit --logging-format=&apos;%(asctime)s %(levelname)s - %(message)s&apos; || :
+nosetests -s --detailed-errors --exclude regtest --with-xunit --logging-format=&apos;%(asctime)s %(levelname)s - %(message)s&apos; osaftest/tests/imm/test.py  || :
+
+python -m osaftest.fw.cluster stop
+
+# lxc directory can have root access only, change it to allow jenkins to read
+# do not use sudo for covgen since it will destroy the source repo
+sudo chmod -R a+rx $LXC_PATH
+sudo find $LXC_PATH -name &quot;ssh_host_*_key&quot; -exec chmod 700 {} +
+sudo find $LXC_PATH -name &quot;id_osaftest&quot; -exec chmod 700 {} + 
+#tools/covgen
+
+mv *.xml ..
+cd ..
+#${HOME}/lcov_cobertura.py -b $OSAFREPODIR /tmp/gcov-osaftestCoverageData -o coverage_osaf.xml
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <xunit plugin="xunit@1.92">
+      <types>
+        <JUnitType>
+          <pattern>nosetests.xml</pattern>
+          <skipNoTestFiles>false</skipNoTestFiles>
+          <failIfNotNew>true</failIfNotNew>
+          <deleteOutputFiles>true</deleteOutputFiles>
+          <stopProcessingIfError>true</stopProcessingIfError>
+        </JUnitType>
+      </types>
+      <thresholds>
+        <org.jenkinsci.plugins.xunit.threshold.FailedThreshold>
+          <unstableThreshold></unstableThreshold>
+          <unstableNewThreshold></unstableNewThreshold>
+          <failureThreshold>0</failureThreshold>
+          <failureNewThreshold>0</failureNewThreshold>
+        </org.jenkinsci.plugins.xunit.threshold.FailedThreshold>
+        <org.jenkinsci.plugins.xunit.threshold.SkippedThreshold>
+          <unstableThreshold></unstableThreshold>
+          <unstableNewThreshold></unstableNewThreshold>
+          <failureThreshold>0</failureThreshold>
+          <failureNewThreshold>0</failureNewThreshold>
+        </org.jenkinsci.plugins.xunit.threshold.SkippedThreshold>
+      </thresholds>
+      <thresholdMode>1</thresholdMode>
+      <extraConfiguration>
+        <testTimeMargin>3000</testTimeMargin>
+      </extraConfiguration>
+    </xunit>
+    <hudson.plugins.postbuildtask.PostbuildTask plugin="postbuild-task@1.8">
+      <tasks>
+        <hudson.plugins.postbuildtask.TaskProperties>
+          <logTexts>
+            <hudson.plugins.postbuildtask.LogProperties>
+              <logText>Setting the build status to FAILURE</logText>
+              <operator>OR</operator>
+            </hudson.plugins.postbuildtask.LogProperties>
+            <hudson.plugins.postbuildtask.LogProperties>
+              <logText>Failing BUILD</logText>
+              <operator>AND</operator>
+            </hudson.plugins.postbuildtask.LogProperties>
+          </logTexts>
+          <EscalateStatus>false</EscalateStatus>
+          <RunIfJobSuccessful>false</RunIfJobSuccessful>
+          <script>umask 002&#xd;
+cd osaftest&#xd;
+source config/sourceme.bash&#xd;
+export OSAFREPODIR=/var/lib/jenkins/jobs/Build-opensaf-default-nonRoot/workspace/opensaf-staging&#xd;
+./tools/collect-info.sh -c -d ${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/&#xd;
+&#xd;
+&#xd;
+cd $OSAFTESTDIR&#xd;
+sudo /home/uabrode/Desktop/shared/scrip/SendMail/mail_script.sh -b ${BUILD_NUMBER} -u ${BUILD_URL} -j ${JOB_NAME} -l ${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_NUMBER} -c ${DEFAULT_CONTENT}</script>
+        </hudson.plugins.postbuildtask.TaskProperties>
+      </tasks>
+    </hudson.plugins.postbuildtask.PostbuildTask>
+    <hudson.tasks.Mailer plugin="mailer@1.11">
+      <recipients>per.rodenvall@ericsson.com</recipients>
+      <dontNotifyEveryUnstableBuild>true</dontNotifyEveryUnstableBuild>
+      <sendToIndividuals>false</sendToIndividuals>
+    </hudson.tasks.Mailer>
+    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.38.2">
+      <recipientList>$DEFAULT_RECIPIENTS</recipientList>
+      <configuredTriggers>
+        <hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+          <email>
+            <recipientList></recipientList>
+            <subject>$PROJECT_DEFAULT_SUBJECT</subject>
+            <body>$PROJECT_DEFAULT_CONTENT
+ uabrode: Triggers: Failure - Any</body>
+            <recipientProviders/>
+            <attachmentsPattern></attachmentsPattern>
+            <attachBuildLog>true</attachBuildLog>
+            <compressBuildLog>true</compressBuildLog>
+            <replyTo>$PROJECT_DEFAULT_REPLYTO</replyTo>
+            <contentType>project</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+        <hudson.plugins.emailext.plugins.trigger.AbortedTrigger>
+          <email>
+            <recipientList></recipientList>
+            <subject>$PROJECT_DEFAULT_SUBJECT</subject>
+            <body>$PROJECT_DEFAULT_CONTENT
+uabrode: Triggers: Aborted</body>
+            <recipientProviders/>
+            <attachmentsPattern></attachmentsPattern>
+            <attachBuildLog>true</attachBuildLog>
+            <compressBuildLog>true</compressBuildLog>
+            <replyTo>$PROJECT_DEFAULT_REPLYTO</replyTo>
+            <contentType>project</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.AbortedTrigger>
+      </configuredTriggers>
+      <contentType>default</contentType>
+      <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
+      <defaultContent>$DEFAULT_CONTENT
+
+This was send because you are part of &quot;Editable Email Notification&quot; in Jenkins configuration on $BUILD_URL
+</defaultContent>
+      <attachmentsPattern></attachmentsPattern>
+      <presendScript>$DEFAULT_PRESEND_SCRIPT</presendScript>
+      <attachBuildLog>true</attachBuildLog>
+      <compressBuildLog>true</compressBuildLog>
+      <replyTo>$DEFAULT_REPLYTO</replyTo>
+      <saveOutput>false</saveOutput>
+    </hudson.plugins.emailext.ExtendedEmailPublisher>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.build__timeout.BuildTimeoutWrapper plugin="build-timeout@1.14">
+      <strategy class="hudson.plugins.build_timeout.impl.AbsoluteTimeOutStrategy">
+        <timeoutMinutes>180</timeoutMinutes>
+      </strategy>
+      <operationList>
+        <hudson.plugins.build__timeout.operations.FailOperation/>
+      </operationList>
+    </hudson.plugins.build__timeout.BuildTimeoutWrapper>
+    <org.jenkinsci.plugins.buildnamesetter.BuildNameSetter plugin="build-name-setter@1.3">
+      <template>#${BUILD_NUMBER}-OpenSAF branch osaftest-default-NonRoot</template>
+    </org.jenkinsci.plugins.buildnamesetter.BuildNameSetter>
+  </buildWrappers>
+</project>

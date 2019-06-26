@@ -1,0 +1,4 @@
+sudo lxc-create -t download -n SC-4 -- --dist ubuntu --release trusty --arch i386
+
+# Start script
+python pythonLoop.py

@@ -1,0 +1,20 @@
+To: per.rodenvall@ericsson.com
+From: per.rodenvall@ericsson.com
+Subject: Failed Jenkins-jobb: 68 Test-branch-default-NonRoot 
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=FILEBOUNDARY
+
+
+--FILEBOUNDARY
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+
+Following Jenkins jobb failed:
+68
+http://147.214.213.182:8080/job/Test-branch-default-NonRoot/68/
+Test-branch-default-NonRoot
+/var/lib/jenkins/jobs/Test-branch-default-NonRoot/builds/68
+
+--FILEBOUNDARY
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: attachment; filename=/var/lib/jenkins/jobs/Test-branch-default-NonRoot/builds/68/osaftestLog-2014-11-17_12-48-12.tgz
